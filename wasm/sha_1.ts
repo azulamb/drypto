@@ -133,7 +133,7 @@ export function SHA_1( size: counter ): counter
 function blockCount( size: counter ): counter
 {
     const blocks = size + 9;
-    return (blocks >> 6) + <counter>(blocks & 63);
+    return (blocks >> 6) + (blocks & 63 ? 1 : 0);
 }
 
 @inline
