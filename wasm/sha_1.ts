@@ -52,7 +52,10 @@ export function SHA_1( size: counter ): counter
     for ( let block: counter = 0 ; block < blocks ; ++block )
     {
         const offset = block * 64;
-        memory.copy(w, offset, 16 * 4);
+        for (let t = 0; t < 16; t++)
+        {
+            store<word>(w, bswap(load<word>(offset + (t << 2))));
+        }
 
         for ( let t = 16 ; t < 80 ; ++t )
         {
