@@ -59,12 +59,12 @@ export function SHA_1( size: counter ): counter
 
         for ( let t = 16 ; t < 80 ; ++t )
         {
-            let offset = w + (t << 2);
-            store<word>(offset, rotl(
-                load<word>(offset -  3) ^
-                load<word>(offset -  8) ^
-                load<word>(offset - 14) ^
-                load<word>(offset - 16), 1
+            let off = w + (t << 2);
+            store<word>(off, rotl(
+                load<word>(off -  3) ^
+                load<word>(off -  8) ^
+                load<word>(off - 14) ^
+                load<word>(off - 16), 1
             ));
         }
 
