@@ -22,7 +22,7 @@ export function SHA_1( size: counter ): counter
     const blocks: counter = blockCount( size );
 
     const last: counter = blocks * 64;
-    memory.fill(last - 8, 0, size);
+    memory.fill(last - 8, 0, last - 8 - size);
 
     // Write data size.
     const bits: dword = size * 8;
