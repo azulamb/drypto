@@ -15,22 +15,18 @@ export function SHA_1( size: counter ): counter
     const K2 = 0x8F1BBCDC;
     const K3 = 0xCA62C1D6;
 
-    if ( size < 0 ) { size = 0; }
+    if ( size < 0 ) size = 0;
 
     store<byte>( size, 0x80 );
 
     const blocks: counter = blockCount( size );
 
     const last: counter = blocks * 64;
-
-    // 0 fill
-    for ( let i: counter = last - 8 ; size < i ; --i )
-    {
-        store<byte>( i, 0 );
-    }
+    memory.fill(last - 8, 0, size);
 
     // Write data size.
     const bits: dword = size * 8;
+
     store<byte>( last - 8, ( bits >> 56 ) & 0xFF );
     store<byte>( last - 7, ( bits >> 48 ) & 0xFF );
     store<byte>( last - 6, ( bits >> 40 ) & 0xFF );
@@ -46,62 +42,67 @@ export function SHA_1( size: counter ): counter
     let h3: word = 0x10325476;
     let h4: word = 0xC3D2E1F0;
 
-    const w: word[] = [
+    const w = memory.data<word>([
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    ];
+    ]);
+
     for ( let block: counter = 0 ; block < blocks ; ++block )
     {
         const offset = block * 64;
-        for ( let t = 0 ; t < 16; ++t )
-        {
-            w[ t ]  = load<byte>( offset + t * 4 ) << 24;
-            w[ t ] |= load<byte>( offset + t * 4 + 1 ) << 16;
-            w[ t ] |= load<byte>( offset + t * 4 + 2 ) <<  8;
-            w[ t ] |= load<byte>( offset + t * 4 + 3 );
-        }
+        memory.copy(w, offset, 16 * 4);
+
         for ( let t = 16 ; t < 80 ; ++t )
         {
-            w[ t ] = SHA1CircularShift( 1, w[ t - 3 ] ^ w[ t - 8 ] ^ w[ t - 14 ] ^ w[ t - 16 ] );
+            let offset = w + (t << 2);
+            store<word>(offset, rotl(
+                load<word>(offset -  3) ^
+                load<word>(offset -  8) ^
+                load<word>(offset - 14) ^
+                load<word>(offset - 16), 1
+            ));
         }
 
         let a = h0, b = h1, c = h2, d = h3, e = h4;
 
         for ( let t = 0 ; t < 20 ; ++t )
         {
-            const tmp = SHA1CircularShift( 5, a ) + F00( b, c, d ) + e + w[ t ] + K0;
+            const tmp = rotl(a, 5) + F00( b, c, d ) + e + load<word>(w + (t << 2)) + K0;
             e = d;
             d = c;
-            c = SHA1CircularShift( 30, b );
+            c = rotl(b, 30);
             b = a;
             a = tmp;
         }
+
         for ( let t = 20 ; t < 40 ; ++t )
         {
-            const tmp = SHA1CircularShift( 5, a ) + F20( b, c, d ) + e + w[ t ] + K1;
+            const tmp = rotl(a, 5) + F20( b, c, d ) + e + load<word>(w + (t << 2)) + K1;
             e = d;
             d = c;
-            c = SHA1CircularShift( 30, b );
+            c = rotl(b, 30);
             b = a;
             a = tmp;
         }
+
         for ( let t = 40 ; t < 60 ; ++t )
         {
-            const tmp = SHA1CircularShift( 5, a ) + F40( b, c, d ) + e + w[ t ] + K2;
+            const tmp = rotl(a, 5) + F40( b, c, d ) + e + load<word>(w + (t << 2)) + K2;
             e = d;
             d = c;
-            c = SHA1CircularShift( 30, b );
+            c = rotl(b, 30);
             b = a;
             a = tmp;
         }
+
         for ( let t = 60 ; t < 80; t++ )
         {
-            const tmp = SHA1CircularShift( 5, a ) + F60( b, c, d ) + e + w[ t ] + K3;
+            const tmp = rotl(a, 5) + F60( b, c, d ) + e + load<word>(w + (t << 2)) + K3;
             e = d;
             d = c;
-            c = SHA1CircularShift( 30, b );
+            c = rotl(b, 30);
             b = a;
             a = tmp;
         }
@@ -119,45 +120,44 @@ export function SHA_1( size: counter ): counter
     outputWord( 8, h2 );
     outputWord( 12, h3 );
     outputWord( 16, h4 );
+
     store<byte>( 20, 0 );
 
     return blocks;
 }
 
+@inline
 function blockCount( size: counter ): counter
 {
     const blocks = size + 9;
-    return <counter>( blocks / 64 ) + ( blocks % 64 ? 1 : 0 );
+    return (blocks >> 6) + <counter>(blocks & 63);
 }
 
+@inline
 function outputWord( offset: counter, value: word ): void
 {
-    store<byte>( offset, value >> 24 );
-    store<byte>( offset + 1, ( value >> 16 ) & 0xFF );
-    store<byte>( offset + 2, ( value >> 8 ) & 0xFF );
-    store<byte>( offset + 3, value & 0xFF );
+    store<word>(offset, bswap(value));
 }
 
-function SHA1CircularShift( bits: counter, word: word ): word
-{
-    return ( ( ( word ) << ( bits ) ) | ( ( word ) >>> ( 32 - ( bits ) ) ) );
-}
-
+@inline
 function F00( B: word, C: word, D: word ): word
 {
     return ( B & C ) | ( ( ~B ) & D );
 }
 
+@inline
 function F20( B: word, C: word, D: word ): word
 {
     return B ^ C ^ D;
 }
 
+@inline
 function F40( B: word, C: word, D: word ): word
 {
     return ( B & C ) | ( B & D ) | ( C & D );
 }
 
+@inline
 function F60( B: word, C: word, D: word ): word
 {
     return B ^ C ^ D;
