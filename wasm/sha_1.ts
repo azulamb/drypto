@@ -54,7 +54,7 @@ export function SHA_1( size: counter ): counter
         const offset = block * 64;
         for (let t = 0; t < 16; t++)
         {
-            store<word>(w, bswap(load<word>(offset + (t << 2))));
+            store<word>(w + (t << 2), bswap(load<word>(offset + (t << 2))));
         }
 
         for ( let t = 16 ; t < 80 ; ++t )
