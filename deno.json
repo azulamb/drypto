@@ -1,0 +1,27 @@
+{
+	"tasks": {
+		"build": "cd `dirname $0` && cd wasm && asc --runtime none -o sha_1.wasm sha_1.ts && asc --runtime none -o sha_1.wat sha_1.ts",
+		"test": "deno run --allow-read tests/test.ts"
+	},
+	"lint": {
+		"files": {
+			"include": ["./"]
+		},
+		"rules": {
+			"tags": ["recommended"],
+			"include": [],
+			"exclude": ["require-await"]
+		}
+	},
+	"fmt": {
+		"files": {
+			"include": ["./"]
+		},
+		"options": {
+			"useTabs": true,
+			"indentWidth": 4,
+			"lineWidth": 160,
+			"singleQuote": true
+		}
+	}
+}
