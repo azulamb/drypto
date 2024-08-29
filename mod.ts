@@ -1,5 +1,6 @@
 import { Base64 } from './base64.ts';
 import * as SHA_1 from './sha_1.ts';
+import * as SHA_256 from './sha_256.ts';
 import { HMAC } from './hmac.ts';
 
 export const VERSION = '0.0.1';
@@ -11,6 +12,7 @@ export const drypto = {
 
 	// Hash.
 	sha_1: SHA_1.SHA_1,
+	sha_256: SHA_256.SHA_256,
 
 	hmac: HMAC,
 
